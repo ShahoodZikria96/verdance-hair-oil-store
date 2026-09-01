@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.*.local
+*.log
+coverage
+.DS_Store
+
+# Local-dev database + generated dev schema (SQLite)
+prisma/*.db
+prisma/*.db-journal
+prisma/schema.dev.prisma
+
+.vercel

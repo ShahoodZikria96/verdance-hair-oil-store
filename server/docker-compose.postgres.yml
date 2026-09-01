@@ -1,0 +1,28 @@
+# OPTIONAL local-dev database — Postgres instead of MySQL.
+# MySQL (docker-compose.yml) is the project default and requirement.
+# Use this only if you cannot run MySQL locally:
+#   1. set  provider = "postgresql"  in prisma/schema.prisma
+#   2. set  DATABASE_URL="postgresql://verdance:verdance@localhost:5433/hair_oil_store"
+#   3. docker compose -f docker-compose.postgres.yml up -d
+#   4. npm run prisma:generate && npx prisma db push && npm run prisma:seed
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: verdance-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: verdance
+      POSTGRES_PASSWORD: verdance
+      POSTGRES_DB: hair_oil_store
+    ports:
+      - '5433:5432'
+    volumes:
+      - verdance_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U verdance -d hair_oil_store']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  verdance_pg_data:
