@@ -6,6 +6,19 @@ import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
 
 import { corsOrigins, isDev } from './config/env';
+
+/**
+ * True when `origin` is allowed:
+ *  - it's in the explicit CORS_ORIGIN / FRONTEND_URL allow-list, OR
+ *  - the allow-list contains a *.vercel.app entry AND `origin` is any
+ *    *.vercel.app URL (covers Vercel's ever-changing preview / per-deploy URLs).
+ */
+function isOriginAllowed(origin: string): boolean {
+  if (corsOrigins.includes(origin)) return true;
+  const usesVercel = corsOrigins.some((o) => /\.vercel\.app$/i.test(o));
+  if (usesVercel && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
+  return false;
+}
 import { logger } from './lib/logger';
 import { apiRouter } from './routes';
 import { openapiDocument } from './docs/openapi';
@@ -22,7 +35,7 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, cb) => {
-        if (!origin || corsOrigins.includes(origin)) return cb(null, true);
+        if (!origin || isOriginAllowed(origin)) return cb(null, true);
         cb(new Error(`Origin ${origin} is not allowed by CORS`));
       },
       credentials: true,
