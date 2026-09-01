@@ -33,7 +33,21 @@ const schema = z.object({
   // Use "none" when the frontend and API are on different domains (requires COOKIE_SECURE=true).
   COOKIE_SAMESITE: z.enum(['lax', 'none', 'strict']).default('lax'),
 
-  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  // Tolerant: accepts a bare domain (adds https://) and never crashes the app
+  // over a cosmetic value — falls back to localhost if it can't be parsed.
+  FRONTEND_URL: z
+    .string()
+    .optional()
+    .transform((v) => {
+      const raw = (v ?? '').trim().replace(/^<|>$/g, '');
+      if (!raw) return 'http://localhost:5173';
+      const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      try {
+        return new URL(withProto).origin;
+      } catch {
+        return 'http://localhost:5173';
+      }
+    }),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
   STORE_CURRENCY: z.string().default('USD'),
@@ -84,5 +98,23 @@ export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
 export const isDev = env.NODE_ENV === 'development';
 
-/** Origins allowed by CORS (comma-separated in CORS_ORIGIN). */
-export const corsOrigins = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+/**
+ * Origins allowed by CORS (comma-separated in CORS_ORIGIN). Bare domains get
+ * `https://` so `example.vercel.app` and `https://example.vercel.app` both work.
+ * Always includes FRONTEND_URL.
+ */
+export const corsOrigins = [
+  ...env.CORS_ORIGIN.split(','),
+  env.FRONTEND_URL,
+]
+  .map((s) => s.trim().replace(/^<|>$/g, ''))
+  .filter(Boolean)
+  .map((s) => {
+    const withProto = /^https?:\/\//i.test(s) ? s : `https://${s}`;
+    try {
+      return new URL(withProto).origin;
+    } catch {
+      return s;
+    }
+  })
+  .filter((v, i, arr) => arr.indexOf(v) === i);
