@@ -3,8 +3,8 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // "native" for local dev; the rhel target is what Vercel / AWS Lambda run on.
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // "native" for local dev; debian = Railway/Render/Nixpacks; rhel = Vercel/AWS Lambda.
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
